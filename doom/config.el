@@ -2,7 +2,7 @@
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
 ;; sync' after modifying this file!
-(setq use-package-compute-statistics t)
+
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets. It is optional.
@@ -33,6 +33,7 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-one)
+(setq +doom-dashboard-pwd-policy "~")
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -75,173 +76,151 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
-;; Enable defer and ensure by default for use-package
-;; Keep auto-save/backup files separate from source code:  https://github.com/scalameta/metals/issues/1027
-(setq use-package-always-defer t
-      use-package-always-ensure t
-      backup-directory-alist `((".*" . ,temporary-file-directory))
-      auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+(setq confirm-kill-emacs nil)
 
-(use-package! treemacs
-  :defer t
-  :config
-  ;; alters file icons to be more vscode-esque (better 😼)
-  ;; https://github.com/doomemacs/themes/wiki/Extension:-Treemacs
-  (setq doom-themes-treemacs-theme "doom-colors")
-  )
+(setq select-enable-clipboard nil)
+(global-set-key (kbd "C-c y") 'clipboard-yank)
+(define-key evil-insert-state-map (kbd "C-p") 'clipboard-yank)
 
-(when (display-graphic-p)
-  (require 'all-the-icons))
-;; or
-(use-package all-the-icons
-  :if (display-graphic-p))
+(global-set-key (kbd "M-o") 'ace-window)
 
 (require 'key-chord)
 (key-chord-mode 1)
 (key-chord-define evil-insert-state-map "jj" 'evil-normal-state)
 
-(require 'markdown-mode)
-(setq markdown-split-window-direction "right")
+(define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
+(define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
+(define-key evil-insert-state-map (kbd "C-n") 'next-line)
+(define-key evil-insert-state-map (kbd "C-p") 'previous-line)
+(define-key evil-insert-state-map (kbd "C-x") 'delete-char)
+
+(with-eval-after-load 'evil-maps
+  (evil-global-set-key 'normal (kbd "C-<tab>") '+workspace/cycle)
+  (evil-global-set-key 'normal (kbd "C-w") 'kill-buffer)
+  (evil-global-set-key 'normal (kbd "S-RET") '+evil/insert-new-line-below)
+  (evil-global-set-key 'normal (kbd "<leader>-d") 'kill-buffer))
+
+(after! treemacs
+  (evil-global-set-key 'treemacs (kbd "C-<tab>") '+workspace/cycle))
+
+;; set default size of frame
+(setq defaultkframe-alist '((left . 0) (width . 0) (fullscreen . maximized)))
 
 (setq user-full-name "Nick Amabile"
       user-mail-address "nick.amabile@shopify.com")
 
-(setq auto-save-default t
-      make-backup-files t)
-
-(after! org
-  (setq org-log-done t)
-  (setq org-log-into-drawer t))
-
-(map! :after magit "C-c C-g" #'magit-status)
-
-;; Minibuffer with visual autocomplete and help
-(use-package marginalia :ensure t)
-(use-package vertico :ensure t)
-(use-package vertico
-  :ensure t
-  :config
-  (setq vertico-cycle t)
-  (setq vertico-resize nil)
-  (vertico-mode 1))
-(use-package consult
-  :ensure t
-  :bind (;; A recursive grep
-         ("M-s M-g" . consult-grep)
-         ;; Search for files names recursively
-         ("M-s M-f" . consult-find)
-         ;; Search through the outline (headings) of the file
-         ("M-s M-o" . consult-outline)
-         ;; Search the current buffer
-         ("M-s M-l" . consult-line)
-         ;; Switch to another buffer, or bookmarked file, or recently
-         ;; opened file.
-         ("M-s M-b" . consult-buffer)))
-(use-package orderless
-  :ensure t
-  :config
-  (setq completion-styles '(orderless basic)))
-
-(use-package! vertico-posframe :ensure t :after vertico)
-(vertico-posframe-mode 1)
-
-(setq confirm-kill-emacs nil)
+(setq auth-sources '("~/.authinfo" "~/.authinfo.gpg"))
 
 (setq doom-font (font-spec :size 20 ))
 
-(setq select-enable-clipboard nil)
-(global-set-key (kbd "C-c y") 'clipboard-yank)
+(use-package forge
+  :after magit)
 
-;; set default size of frame
-(setq default-frame-alist '(
-                            (left . 0)
-                            (width . 0)
-                            (fullscreen . fullboth)))
-
-
-;; Enable scala-mode for highlighting, indentation and motion commands
-(use-package scala-mode
-  :interpreter ("scala" . scala-mode))
-
-;; Enable sbt mode for executing sbt commands
-(use-package sbt-mode
-  :commands sbt-start sbt-command
+(use-package centaur-tabs
+  :init
+  (setq centaur-tabs-enable-key-bindings t)
   :config
-  ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
-  ;; allows using SPACE when in the minibuffer
-  (substitute-key-definition
-   'minibuffer-complete-word
-   'self-insert-command
-   minibuffer-local-completion-map)
-  ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
-  (setq sbt:program-options '("-Dsbt.supershell=false")))
+  (setq centaur-tabs-style "bar"
+        centaur-tabs-height 32
+        centaur-tabs-set-icons t
+        centaur-tabs-show-new-tab-button t
+        centaur-tabs-set-modified-marker t
+        centaur-tabs-set-bar 'left
+        centaur-tabs-show-count nil)
+  (centaur-tabs-headline-match)
+  (centaur-tabs-mode t)
+  (setq uniquify-separator "/")
+  (setq uniquify-buffer-name-style 'forward)
+  (defun centaur-tabs-buffer-groups ()
+    "`centaur-tabs-buffer-groups' control buffers' group rules.
 
-;; Enable nice rendering of diagnostics like compile errors.
-(use-package flycheck
-  :init (global-flycheck-mode))
-
-(use-package lsp-mode
-  ;; Optional - enable lsp-mode automatically in scala files
-  ;; You could also swap out lsp for lsp-deffered in order to defer loading
-  :hook  (scala-mode . lsp)
-  (lsp-mode . lsp-lens-mode)
-  :config
-  ;; Uncomment following section if you would like to tune lsp-mode performance according to
-  ;; https://emacs-lsp.github.io/lsp-mode/page/performance/
-  ;; (setq gc-cons-threshold 100000000) ;; 100mb
-  ;; (setq read-process-output-max (* 1024 1024)) ;; 1mb
-  ;; (setq lsp-idle-delay 0.500)
-  ;; (setq lsp-log-io nil)
-  ;; (setq lsp-completion-provider :capf)
-  (setq lsp-prefer-flymake nil)
-  ;; Makes LSP shutdown the metals server when all buffers in the project are closed.
-  ;; https://emacs-lsp.github.io/lsp-mode/page/settings/mode/#lsp-keep-workspace-alive
-  (setq lsp-keep-workspace-alive nil))
-
-;; Add metals backend for lsp-mode
-(use-package lsp-metals)
-
-;; Enable nice rendering of documentation on hover
-;;   Warning: on some systems this package can reduce your emacs responsiveness significally.
-;;   (See: https://emacs-lsp.github.io/lsp-mode/page/performance/)
-;;   In that case you have to not only disable this but also remove from the packages since
-;;   lsp-mode can activate it automatically.
-(use-package lsp-ui)
-
-;; lsp-mode supports snippets, but in order for them to work you need to use yasnippet
-;; If you don't want to use snippets set lsp-enable-snippet to nil in your lsp-mode settings
-;; to avoid odd behavior with snippets and indentation
-(use-package yasnippet)
-
-;; Use company-capf as a completion provider.
-;;
-;; To Company-lsp users:
-;;   Company-lsp is no longer maintained and has been removed from MELPA.
-;;   Please migrate to company-capf.
-(use-package company
-  :hook (scala-mode . company-mode)
-  :config
-  (setq lsp-completion-provider :capf))
-
-;; Posframe is a pop-up tool that must be manually installed for dap-mode
-(use-package posframe)
-
-;; Use the Debug Adapter Protocol for running tests and debugging
-(use-package dap-mode
+Group centaur-tabs with mode if buffer is derived from `eshell-mode' `emacs-lisp-mode' `dired-mode' `org-mode' `magit-mode'.
+All buffer name start with * will group to \"Emacs\".
+Other buffer group by `centaur-tabs-get-group-name' with project name."
+    (list
+     (cond
+      ;; ((not (eq (file-remote-p (buffer-file-name)) nil))
+      ;; "Remote")
+      ((or (string-equal "*" (substring (buffer-name) 0 1))
+           (memq major-mode '(magit-process-mode
+                              magit-status-mode
+                              magit-diff-mode
+                              magit-log-mode
+                              magit-file-mode
+                              magit-blob-mode
+                              magit-blame-mode
+                              )))
+       "Emacs")
+      ((derived-mode-p 'prog-mode)
+       "Editing")
+      ((derived-mode-p 'dired-mode)
+       "Dired")
+      ((memq major-mode '(helpful-mode
+                          help-mode))
+       "Help")
+      ((memq major-mode '(org-mode
+                          org-agenda-clockreport-mode
+                          org-src-mode
+                          org-agenda-mode
+                          org-beamer-mode
+                          org-indent-mode
+                          org-bullets-mode
+                          org-cdlatex-mode
+                          org-agenda-log-mode
+                          diary-mode))
+       "OrgMode")
+      (t
+       (centaur-tabs-get-group-name (current-buffer))))))
   :hook
-  (lsp-mode . dap-mode)
-  (lsp-mode . dap-ui-mode))
+  (dashboard-mode . centaur-tabs-local-mode)
+  (term-mode . centaur-tabs-local-mode)
+  (calendar-mode . centaur-tabs-local-mode)
+  (org-agenda-mode . centaur-tabs-local-mode)
+  :bind
+  (("s-{" . centaur-tabs-backward)
+   ("s-}" . centaur-tabs-forward)
+   ("s-<" . centaur-tabs-move-current-tab-to-left)
+   ("s->" . centaur-tabs-move-current-tab-to-right))
+  (:map evil-normal-state-map
+        ("g t" . centaur-tabs-forward)
+        ("g T" . centaur-tabs-backward)))
 
-(use-package doom-modeline
+
+(use-package! treemacs
+  :config
+  ;; alters file icons to be more vscode-esque (better 😼)
+  ;; https://github.com/doomemacs/themes/wiki/Extension:-Treemacs
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (setq treemacs-follow-mode t)
+  (setq treemacs-project-follow-into-home nil)
+  (setq treemacs-max-git-entries 5000)
+  (setq treemacs-missing-project-action 'ask)
+  (setq treemacs-is-never-other-window nil)
+  (setq treemacs-peek-mode t)
+  (setq treemacs-display-in-side-window t)
+  (setq treemacs-recenter-after-project-jump 'always)
+  (setq treemacs-find-workspace-method 'always-ask))
+
+(use-package treemacs-persp
+  :after (treemacs persp)
   :ensure t
-  :init (doom-modeline-mode 1))
+  :config (treemacs-set-scope-type 'Perspectives))
 
-(use-package treemacs-evil
-  :after (treemacs evil)
-  :ensure t)
+(after! persp-mode
+  (setq +workspaces-on-switch-project-behavior nil))
+
+(use-package projectile
+  :config
+  (setq projectile-project-search-path '("~/org "("~/src/github.com/Shopify" . 1)))
+  (projectile-mode +1)
+  )
 
 (use-package treemacs-projectile
   :after (treemacs projectile)
+  :ensure t)
+
+(use-package treemacs-evil
+  :after (treemacs evil)
   :ensure t)
 
 (use-package treemacs-icons-dired
@@ -252,32 +231,62 @@
   :after (treemacs magit)
   :ensure t)
 
-(treemacs-start-on-boot)
-
 (setq treemacs-width 50)
 (treemacs-resize-icons 44)
-
 (treemacs-git-mode 'deferred)
 
-(setq projectile-project-search-path '("~/src/github.com/Shopify"))
+(after! org
+  (setq org-todo-keywords
+        '((sequence "TODO" "INPROGRESS" "BLOCKED" "WAITING" "LATER" "|" "DONE" "CANCELED")))
+  (setq org-log-done t)
+  (setq org-log-into-drawer t))
 
-(setq dired-dwim-target t)
+(setq org-agenda-files '("~/org" "~/org/daily"))
+(setq org-archive-location (concat "~/archive/" (format-time-string "%Y-%m") ".org::* From %s"))
+(defun org-archive-done-tasks ()
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (org-archive-subtree)
+     (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
+   "/DONE" 'file))
 
-(use-package evil-multiedit)
-(setq evil-multiedit-default-keybinds 1)
+(setq python-shell-interpreter "python3")
 
-(require 'org-roam)
 (use-package org-roam
   :ensure t
+  :init
+  (setq org-roam-database-connector 'sqlite-builtin)
   :custom
-  (org-roam-directory "~/org")
+  (org-roam-directory (file-truename "~/org/"))
   (org-roam-completion-everywhere t)
-  (org-roam-dailies-capture-templates
-   '(("d" "default" entry "* %<%I:%M %p>: %?"
-      :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n"))))
+  (org-roam-capture-templates
+   '(("d" "default" plain (file "~/org/templates/default.org")
+      :target
+      (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)
+     ("b" "book notes" plain (file "~/org/templates/book-notes.org")
+      :target (file+head "%<%Y%m%d%H%M%S>-book-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)
+     ("p" "people" plain (file "~/org/templates/people.org")
+      :target (file+head "%<%Y%m%d%H%M%S>-people-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)
+     ("g" "GSD projects" plain (file "~/org/templates/projects.org")
+      :target (file+head "%<%Y%m%d%H%M%S>-projects-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)
+     ("m" "meetings" plain (file "~/org/templates/meetings.org")
+      :target (file+head "%<%Y%m%d%H%M%S>-meetings-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)
+     ("l" "long-form document" plain "%?"
+      :target (file+head "docs/%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+      :unnarrowed t)))
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
          ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today)
          :map org-mode-map
          ("C-M-i" . completion-at-point)
          :map org-roam-dailies-map
@@ -286,7 +295,119 @@
   :bind-keymap
   ("C-c n d" . org-roam-dailies-map)
   :config
-  (require 'org-roam-dailies) ;; Ensure the keymap is available
-  (setq org-roam-database-connector 'sqlite3))
-(setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
-(org-roam-db-autosync-mode))
+  ;; If you're using a vertical completion framework, you might want a more informative completion interface
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+  (setq org-roam-dailies-directory "daily/")
+  (setq org-roam-dailies-capture-templates
+        '(("d" "default" entry
+           "* %?"
+           :target (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>\n"))))
+  (org-roam-db-autosync-mode)
+  ;; Ensure the keymap is available
+  (require 'org-roam-dailies)
+  ;; If using org-roam-protocol
+  (require 'org-roam-protocol))
+
+(use-package! org-roam-ui
+  :after org-roam ;; or :after org
+  ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;;         a hookable mode anymore, you're advised to pick something yourself
+  ;;         if you don't care about startup time, use
+  ;;  :hook (after-init . org-roam-ui-mode)
+  :config
+  (setq org-roam-ui-sync-theme t
+        org-roam-ui-follow t
+        org-roam-ui-update-on-save t
+        org-roam-ui-open-on-start nil))
+
+
+(use-package vertico-posframe :ensure t :after vertico)
+(vertico-posframe-mode 1)
+
+(use-package elpy
+  :ensure t
+  :init
+  (elpy-enable))
+
+
+(add-hook 'elpy-mode-hook (lambda () (flycheck-mode t)))
+(setq flycheck-python-mypy-executable "mypy")
+(setq python-shell-interpreter "jupyter"
+      python-shell-interpreter-args "console --simple-prompt"
+      python-shell-prompt-detect-failure-warning nil)
+(add-to-list 'python-shell-completion-native-disabled-interpreters
+             "jupyter")
+
+(use-package shadowenv
+  :ensure t
+  :hook (after-init . shadowenv-global-mode))
+
+(use-package sqlformat
+  :config
+  (setq sqlformat-command 'sqlfluff)
+  :hook
+  ('sql-mode-hook 'sqlformat-on-save-mode)
+  )
+
+;; (use-package emacs-slack
+;;   :bind (("C-c S K" . slack-stop)
+;;          ("C-c S c" . slack-select-rooms)
+;;          ("C-c S u" . slack-select-unread-rooms)
+;;          ("C-c S U" . slack-user-select)
+;;          ("C-c S s" . slack-search-from-messages)
+;;          ("C-c S J" . slack-jump-to-browser)
+;;          ("C-c S j" . slack-jump-to-app)
+;;          ("C-c S e" . slack-insert-emoji)
+;;          ("C-c S E" . slack-message-edit)
+;;          ("C-c S r" . slack-message-add-reaction)
+;;          ("C-c S t" . slack-thread-show-or-create)
+;;          ("C-c S g" . slack-message-redisplay)
+;;          ("C-c S G" . slack-conversations-list-update-quick)
+;;          ("C-c S q" . slack-quote-and-reply)
+;;          ("C-c S Q" . slack-quote-and-reply-with-link)
+;;          (:map slack-mode-map
+;;                (("@" . slack-message-embed-mention)
+;;                 ("#" . slack-message-embed-channel)))
+;;          (:map slack-thread-message-buffer-mode-map
+;;                (("C-c '" . slack-message-write-another-buffer)
+;;                 ("@" . slack-message-embed-mention)
+;;                 ("#" . slack-message-embed-channel)))
+;;          (:map slack-message-buffer-mode-map
+;;                (("C-c '" . slack-message-write-another-buffer)))
+;;          (:map slack-message-compose-buffer-mode-map
+;;                (("C-c '" . slack-message-send-from-buffer)))
+;;          )
+;;   :init
+;;   (slack-register-team
+;;    :name "shopify"
+;;    :token (auth-source-pick-first-password
+;;            :host "shopify.slack.com"
+;;            :user "nick.amabile@shopify.com")
+;;    :cookie (auth-source-pick-first-password
+;;             :host "shopify.slack.com"
+;;             :user "nick.amabile@shopify.com^cookie")
+;;    :full-and-display-names t
+;;    :default t
+;;    :subscribed-channels '((corp-data-talk data-eng-community data-community)) ;; using slack-extra-subscribed-channels because I can change it dynamically
+;;    ))
+
+
+(use-package alert
+  :commands (alert)
+  :init
+  (setq alert-default-style 'notifier)
+  )
+
+(use-package emojify
+  :init (global-emojify-mode))
+
+(with-eval-after-load "persp-mode-autoloads"
+  (add-hook 'after-init-hook #'(lambda () (persp-mode 1))))
+
+(require 'zoom-window)
+(custom-set-variables
+ '(zoom-window-use-persp t))
+(zoom-window-setup)
+
+(global-set-key (kbd "C-x C-z") 'zoom-window-zoom)
